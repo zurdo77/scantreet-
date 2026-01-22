@@ -1,0 +1,13 @@
+:root{
+  --bg:#0f1724;
+  --card:#0b1220;
+  --accent:#7c3aed;
+  --muted:#94a3b8;
+  --text:#e6eef8;
+}
+
+html,body,#root{height:100%;margin:0;font-family:Inter,system-ui,Helvetica,Arial; background:linear-gradient(180deg,#071129 0%, #051022 100%); color:var(--text);}
+
+.app{max-width:1000px;margin:32px auto;padding:20px;border-radius:12px;background:rgba(255,255,255,0.02);box-shadow:0 6px 30px rgba(2,6,23,0.6);}
+
+header h1{margin:0 0 12px 0;font-size:1.6rem}
