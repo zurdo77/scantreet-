@@ -1,0 +1,20 @@
+:root{
+  --bg:#0f1724;
+  --card:#0b1220;
+  --accent:#7c3aed;
+  --muted:#94a3b8;
+  --success:#16a34a;
+  --danger:#ef4444;
+  --text:#e6eef8;
+}
+
+.scantree-scanner{padding:12px;border-radius:10px;background:rgba(255,255,255,0.02)}
+.scantree-scanner .controls{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;}
+.scantree-scanner .btn{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:rgba(255,255,255,0.02);color:var(--text);cursor:pointer}
+.scantree-scanner .btn.start{border-color:rgba(124,58,237,0.9);background:linear-gradient(90deg, rgba(124,58,237,0.12), rgba(124,58,237,0.06))}
+.scantree-scanner .stats{display:flex;gap:16px;margin-bottom:12px;color:var(--muted);font-size:0.95rem}
+.scantree-scanner .trades{width:100%;border-collapse:collapse;background:transparent}
+.scantree-scanner thead th{text-align:left;padding:10px;border-bottom:1px solid rgba(255,255,255,0.03);font-weight:600;color:var(--muted);font-size:0.9rem}
+.scantree-scanner tbody td{padding:10px;border-bottom:1px solid rgba(255,255,255,0.02);font-size:0.95rem}
+.scantree-scanner tbody tr td.buy{color:var(--success)}
+.scantree-scanner tbody tr td.sell{color:var(--danger)}
