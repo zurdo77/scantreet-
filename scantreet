@@ -1,0 +1,310 @@
+#!/usr/bin/env bash
+set -e
+
+MSG="Add Omni Trade Scanner Vite app and Scantree component"
+
+echo "Creando estructura de archivos y contenidos..."
+
+# package.json
+cat > package.json <<'EOF'
+{
+  "name": "omni-trade-scanner",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "lucide-react": "^0.273.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.5.1",
+    "@types/react": "^18.2.24",
+    "@types/react-dom": "^18.2.8",
+    "@vitejs/plugin-react": "^5.1.0",
+    "typescript": "^5.4.0",
+    "vite": "^5.3.0"
+  }
+}
+EOF
+
+# vite.config.ts
+cat > vite.config.ts <<'EOF'
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+
+export default defineConfig({
+  plugins: [react()],
+  server: {
+    port: 5173
+  }
+});
+EOF
+
+# tsconfig.json
+cat > tsconfig.json <<'EOF'
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "useDefineForClassFields": true,
+    "lib": ["DOM", "ES2020"],
+    "jsx": "react-jsx",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true
+  },
+  "include": ["src"]
+}
+EOF
+
+# index.html
+cat > index.html <<'EOF'
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Omni Trade Scanner</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+EOF
+
+# src/
+mkdir -p src
+
+# src/main.tsx
+cat > src/main.tsx <<'EOF'
+import React from "react";
+import { createRoot } from "react-dom/client";
+import App from "./App";
+import "./styles.css";
+
+const rootEl = document.getElementById("root")!;
+const root = createRoot(rootEl);
+
+root.render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+);
+EOF
+
+# src/App.tsx
+cat > src/App.tsx <<'EOF'
+import React from "react";
+import ScantreeMarketScanner from "./scantreet_market_scanner";
+import "./scantreet_market_scanner.css";
+
+export default function App() {
+  return (
+    <div className="app">
+      <header>
+        <h1>Omni Trade Scanner</h1>
+      </header>
+      <main>
+        <ScantreeMarketScanner autoStart={false} interval={1200} maxItems={50} />
+      </main>
+    </div>
+  );
+}
+EOF
+
+# src/scantreet_market_scanner.tsx
+cat > src/scantreet_market_scanner.tsx <<'EOF'
+import React, { useEffect, useState, useRef } from "react";
+import { Play, Pause, RefreshCcw } from "lucide-react";
+
+/**
+ * ScantreeMarketScanner - componente reutilizable
+ */
+
+export type Trade = {
+  id: string;
+  symbol: string;
+  price: number;
+  volume: number;
+  side: "buy" | "sell";
+  time: string;
+};
+
+export type ScantreeProps = {
+  autoStart?: boolean;
+  interval?: number;
+  maxItems?: number;
+  className?: string;
+};
+
+function randomTrade(i: number): Trade {
+  const symbols = ["BTC/USD", "ETH/USD", "SOL/USD", "ARB/USD"];
+  const side = Math.random() > 0.5 ? "buy" : "sell";
+  return {
+    id: `t-${Date.now()}-${i}-${Math.floor(Math.random() * 1000)}`,
+    symbol: symbols[Math.floor(Math.random() * symbols.length)],
+    price: Number((Math.random() * 10000 + (side === "buy" ? 100 : 0)).toFixed(2)),
+    volume: Number((Math.random() * 5).toFixed(3)),
+    side,
+    time: new Date().toLocaleTimeString()
+  };
+}
+
+export default function ScantreeMarketScanner({
+  autoStart = false,
+  interval = 1200,
+  maxItems = 50,
+  className = ""
+}: ScantreeProps): JSX.Element {
+  const [running, setRunning] = useState<boolean>(autoStart);
+  const [trades, setTrades] = useState<Trade[]>([]);
+  const timerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (running) {
+      timerRef.current = window.setInterval(() => {
+        setTrades((prev) => {
+          const next = [randomTrade(prev.length), ...prev].slice(0, maxItems);
+          return next;
+        });
+      }, Math.max(200, interval));
+    } else {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    }
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    };
+  }, [running, interval, maxItems]);
+
+  function handleClear() {
+    setTrades([]);
+  }
+
+  function handleFetchNow() {
+    setTrades((prev) => [randomTrade(prev.length), ...prev].slice(0, maxItems));
+  }
+
+  return (
+    <section className={`scantree-scanner ${className}`}>
+      <div className="controls">
+        <button className="btn start" onClick={() => setRunning(true)} aria-pressed={running}>
+          <Play size={16} /> Iniciar
+        </button>
+        <button className="btn stop" onClick={() => setRunning(false)} aria-pressed={!running}>
+          <Pause size={16} /> Detener
+        </button>
+        <button className="btn fetch" onClick={handleFetchNow}>
+          <RefreshCcw size={16} /> Actualizar
+        </button>
+        <button className="btn clear" onClick={handleClear}>
+          Limpiar
+        </button>
+      </div>
+
+      <div className="stats">
+        <div>Total: {trades.length}</div>
+        <div>Estado: {running ? "Corriendo" : "Detenido"}</div>
+      </div>
+
+      <table className="trades">
+        <thead>
+          <tr>
+            <th>Hora</th>
+            <th>Símbolo</th>
+            <th>Precio</th>
+            <th>Volumen</th>
+            <th>Lado</th>
+          </tr>
+        </thead>
+        <tbody>
+          {trades.map((t) => (
+            <tr key={t.id}>
+              <td>{t.time}</td>
+              <td>{t.symbol}</td>
+              <td>{t.price.toLocaleString()}</td>
+              <td>{t.volume}</td>
+              <td className={t.side}>{t.side.toUpperCase()}</td>
+            </tr>
+          ))}
+          {trades.length === 0 && (
+            <tr>
+              <td colSpan={5} style={{ textAlign: "center", opacity: 0.7 }}>
+                Sin operaciones — pulsa Iniciar o Actualizar
+              </td>
+            </tr>
+          )}
+        </tbody>
+      </table>
+    </section>
+  );
+}
+EOF
+
+# src/scantreet_market_scanner.css
+cat > src/scantreet_market_scanner.css <<'EOF'
+:root{
+  --bg:#0f1724;
+  --card:#0b1220;
+  --accent:#7c3aed;
+  --muted:#94a3b8;
+  --success:#16a34a;
+  --danger:#ef4444;
+  --text:#e6eef8;
+}
+
+.scantree-scanner{padding:12px;border-radius:10px;background:rgba(255,255,255,0.02)}
+.scantree-scanner .controls{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;}
+.scantree-scanner .btn{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:rgba(255,255,255,0.02);color:var(--text);cursor:pointer}
+.scantree-scanner .btn.start{border-color:rgba(124,58,237,0.9);background:linear-gradient(90deg, rgba(124,58,237,0.12), rgba(124,58,237,0.06))}
+.scantree-scanner .stats{display:flex;gap:16px;margin-bottom:12px;color:var(--muted);font-size:0.95rem}
+.scantree-scanner .trades{width:100%;border-collapse:collapse;background:transparent}
+.scantree-scanner thead th{text-align:left;padding:10px;border-bottom:1px solid rgba(255,255,255,0.03);font-weight:600;color:var(--muted);font-size:0.9rem}
+.scantree-scanner tbody td{padding:10px;border-bottom:1px solid rgba(255,255,255,0.02);font-size:0.95rem}
+.scantree-scanner tbody tr td.buy{color:var(--success)}
+.scantree-scanner tbody tr td.sell{color:var(--danger)}
+EOF
+
+# src/styles.css
+cat > src/styles.css <<'EOF'
+:root{
+  --bg:#0f1724;
+  --card:#0b1220;
+  --accent:#7c3aed;
+  --muted:#94a3b8;
+  --text:#e6eef8;
+}
+
+html,body,#root{height:100%;margin:0;font-family:Inter,system-ui,Helvetica,Arial; background:linear-gradient(180deg,#071129 0%, #051022 100%); color:var(--text);}
+
+.app{max-width:1000px;margin:32px auto;padding:20px;border-radius:12px;background:rgba(255,255,255,0.02);box-shadow:0 6px 30px rgba(2,6,23,0.6);}
+
+header h1{margin:0 0 12px 0;font-size:1.6rem}
+EOF
+
+# README.md
+cat > README.md <<'EOF'
+# Omni Trade Scanner (Vite + React + TypeScript)
+
+Proyecto listo para ejecutar y desplegar en Vercel.
+
+Instalación y ejecución:
+1. Instala dependencias:
+   ```bash
+   npm install
